@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "last_updated": "2025-10-02T12:04:48.237494+00:00",
+  "timestamp": 1759406688237,
+  "available": [
+    {
+      "id": 5518423575,
+      "tag": "хуй",
+      "messages_handled": 0,
+      "is_available": true,
+      "added_at": "2025-10-02 09:59:03"
+    }
+  ],
+  "offline": [],
+  "total_active": 1,
+  "total_offline": 0
+}
