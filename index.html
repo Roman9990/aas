@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ночной лучь - Выбор телехранителя</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .main-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e3f2fd;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-dots {
+            font-size: 18px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .admins-section {
+            display: none;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .section-header.available {
+            color: #27ae60;
+        }
+
+        .section-header.offline {
+            color: #e74c3c;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.online {
+            background: #27ae60;
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.offline {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px rgba(39, 174, 96, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(39, 174, 96, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(39, 174, 96, 0.5); }
+        }
+
+        .admins-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .admin-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8eeff 100%);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .admin-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .admin-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .admin-card.offline {
+            background: linear-gradient(135deg, #f8f8f8 0%, #eeeeee 100%);
+            opacity: 0.7;
+        }
+
+        .admin-card.offline::before {
+            background: #bdc3c7;
+        }
+
+        .admin-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .admin-tag {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .admin-stats {
+            font-size: 14px;
+            color: #7f8c8d;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-icon {
+            font-size: 16px;
+        }
+
+        .no-admins {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7f8c8d;
+        }
+
+        .no-admins-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            max-width: 90vw;
+        }
+
+        .notification.success {
+            background: #27ae60;
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="main-title">✨ Ночной лучь</h1>
+            <p class="subtitle">Выберите своего персонального телехранителя</p>
+        </div>
+
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <span class="loading-dots">Загружаем телехранителей...</span>
+        </div>
+
+        <div class="admins-section">
+            <div class="section available-section">
+                <div class="section-header available">
+                    <div class="status-indicator online"></div>
+                    Доступные телехранители
+                </div>
+                <div class="admins-grid" id="available-admins"></div>
+            </div>
+
+            <div class="section offline-section">
+                <div class="section-header offline">
+                    <div class="status-indicator offline"></div>
+                    Временно недоступные
+                </div>
+                <div class="admins-grid" id="offline-admins"></div>
+            </div>
+
+            <button class="refresh-btn" onclick="loadAdmins()">🔄 Обновить список</button>
+        </div>
+
+        <div class="footer">
+            <p>💫 Выберите телехранителя одним касанием</p>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        let adminsData = null;
+        let tg = window.Telegram.WebApp;
+
+        // Инициализация Telegram Web App
+        function initTelegramWebApp() {
+            try {
+                tg.ready();
+                tg.expand();
+
+                // Настраиваем тему
+                document.body.style.background = tg.themeParams.bg_color || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+
+                console.log('✅ Telegram Web App инициализирован');
+            } catch (error) {
+                console.log('⚠️ Telegram Web App недоступен:', error);
+            }
+        }
+
+        // Загрузка админов ТОЛЬКО из JSON файла
+        async function loadAdmins() {
+            try {
+                console.log('🔄 Загружаем админов из JSON файла...');
+
+                // Показываем индикатор загрузки
+                const loadingDiv = document.querySelector('.loading');
+                const adminsSection = document.querySelector('.admins-section');
+
+                if (loadingDiv) loadingDiv.style.display = 'flex';
+                if (adminsSection) adminsSection.style.display = 'none';
+
+                // Загрузка из JSON файла
+                const response = await fetch('./admins_data.json');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: Файл admins_data.json не найден`);
+                }
+
+                const data = await response.json();
+
+                if (!data || data.status !== 'success') {
+                    throw new Error('Некорректный формат JSON файла');
+                }
+
+                // Скрываем загрузку, показываем админов
+                if (loadingDiv) loadingDiv.style.display = 'none';
+                if (adminsSection) adminsSection.style.display = 'block';
+
+                adminsData = data;
+                renderAdmins(data.available || [], data.offline || []);
+
+                console.log('✅ Админы загружены из JSON:', data);
+
+                const totalAdmins = (data.available?.length || 0) + (data.offline?.length || 0);
+                showNotification('Успех', `Загружено ${totalAdmins} телехранителей`, false);
+
+            } catch (error) {
+                console.error('❌ Ошибка загрузки админов:', error);
+
+                // Скрываем загрузку
+                const loadingDiv = document.querySelector('.loading');
+                const adminsSection = document.querySelector('.admins-section');
+
+                if (loadingDiv) loadingDiv.style.display = 'none';
+                if (adminsSection) adminsSection.style.display = 'block';
+
+                // Показываем сообщение об ошибке
+                showNotification('Ошибка', 'Не удалось загрузить список телехранителей. Убедитесь что файл admins_data.json существует.', true);
+
+                // Показываем пустой список
+                renderAdmins([], []);
+            }
+        }
+
+        // Отображение админов
+        function renderAdmins(available, offline) {
+            const availableContainer = document.getElementById('available-admins');
+            const offlineContainer = document.getElementById('offline-admins');
+            const availableSection = document.querySelector('.available-section');
+            const offlineSection = document.querySelector('.offline-section');
+
+            // Очищаем контейнеры
+            availableContainer.innerHTML = '';
+            offlineContainer.innerHTML = '';
+
+            // Доступные админы
+            if (available && available.length > 0) {
+                availableSection.style.display = 'block';
+                available.forEach(admin => {
+                    availableContainer.appendChild(createAdminCard(admin, true));
+                });
+            } else {
+                availableSection.style.display = 'none';
+            }
+
+            // Недоступные админы
+            if (offline && offline.length > 0) {
+                offlineSection.style.display = 'block';
+                offline.forEach(admin => {
+                    offlineContainer.appendChild(createAdminCard(admin, false));
+                });
+            } else {
+                offlineSection.style.display = 'none';
+            }
+
+            // Если нет админов вообще
+            if ((!available || available.length === 0) && (!offline || offline.length === 0)) {
+                availableContainer.innerHTML = `
+                    <div class="no-admins">
+                        <div class="no-admins-icon">🤖</div>
+                        <h3>Телехранители не найдены</h3>
+                        <p>Пока нет добавленных телехранителей.<br>
+                        Администратор может добавить их через бота командой /add_admin</p>
+                    </div>
+                `;
+                availableSection.style.display = 'block';
+            }
+        }
+
+        // Создание карточки админа
+        function createAdminCard(admin, isAvailable) {
+            const card = document.createElement('div');
+            card.className = `admin-card ${isAvailable ? '' : 'offline'}`;
+
+            card.innerHTML = `
+                <div class="admin-info">
+                    <div class="admin-tag">#${admin.tag}</div>
+                    <div class="admin-stats">
+                        <span class="stat-icon">💬</span>
+                        <span>${admin.messages_handled || 0} сообщений</span>
+                    </div>
+                </div>
+            `;
+
+            // Добавляем обработчик клика только для доступных админов
+            if (isAvailable) {
+                card.addEventListener('click', () => selectAdmin(admin));
+            }
+
+            return card;
+        }
+
+        // Выбор админа
+        function selectAdmin(admin) {
+            try {
+                console.log('👤 Выбран админ:', admin);
+
+                // Подготавливаем данные для отправки боту
+                const selectionData = {
+                    action: 'select_admin',
+                    admin_id: admin.id,
+                    admin_tag: admin.tag,
+                    timestamp: Date.now()
+                };
+
+                // Отправляем данные в Telegram бота
+                if (tg && tg.sendData) {
+                    tg.sendData(JSON.stringify(selectionData));
+                    console.log('✅ Данные отправлены боту:', selectionData);
+                } else {
+                    console.error('❌ Telegram Web App недоступен');
+                    showNotification('Ошибка', 'Не удалось связаться с ботом', true);
+                    return;
+                }
+
+                // Показываем уведомление об успехе
+                showSuccessNotification(admin.tag);
+
+            } catch (error) {
+                console.error('❌ Ошибка выбора админа:', error);
+                showNotification('Ошибка', 'Не удалось выбрать телехранителя', true);
+            }
+        }
+
+        // Уведомление об успешном выборе
+        function showSuccessNotification(adminTag) {
+            showNotification(
+                '✅ Телехранитель выбран!',
+                `Вы выбрали #${adminTag}. Теперь можете писать боту.`,
+                false
+            );
+        }
+
+        // Показ уведомлений
+        function showNotification(title, message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = `<strong>${title}</strong><br>${message}`;
+            notification.className = `notification ${isError ? 'error' : 'success'} show`;
+
+            // Автоматическое скрытие через 4 секунды
+            setTimeout(() => {
+                hideNotification();
+            }, 4000);
+        }
+
+        // Скрытие уведомлений
+        function hideNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.remove('show');
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            initTelegramWebApp();
+            loadAdmins();
+        });
+    </script>
+</body>
+</html>
